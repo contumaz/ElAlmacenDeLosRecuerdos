@@ -1,0 +1,383 @@
+import { useCallback, useEffect, useMemo } from 'react';
+import { Memory } from '../types';
+import { MemoryData } from '../services/types/electronTypes';
+import { loadMemories as loadMemoriesAPI, getTotalMemoriesCount } from '../services/electronAPI';
+import loggingService from '../services/LoggingService';
+
+// Helper function to convert MemoryData to Memory
+const convertMemoryDataToMemory = (memoryData: MemoryData): Memory => {
+  return {
+    id: memoryData.id || Date.now(),
+    title: memoryData.title,
+    content: memoryData.content,
+    type: memoryData.type,
+    tags: memoryData.tags,
+    filePath: memoryData.filePath,
+    audioUrl: memoryData.audioUrl,
+    imageUrl: memoryData.imageUrl,
+    videoUrl: memoryData.videoUrl,
+    encryptionLevel: memoryData.encryptionLevel || 'none',
+    requiresPassword: memoryData.requiresPassword || false,
+    isEncrypted: memoryData.isEncrypted || false,
+    privacyLevel: memoryData.privacyLevel || 1,
+    createdAt: memoryData.createdAt || new Date().toISOString(),
+    updatedAt: memoryData.updatedAt || new Date().toISOString(),
+    metadata: memoryData.metadata || {}
+  };
+};
+import { useMemoryState } from './useMemoryState';
+import useEncryption from './useEncryption';
+import { getAllMockMemories } from '../data/mockMemories';
+import { useAuth } from './use-auth-hook';
+
+/**
+ * Constante para el número de memorias por página
+ */
+const MEMORIES_PER_PAGE = 20;
+
+/**
+ * Hook para manejar la paginación y carga de memorias
+ * 
+ * @returns {Object} Funciones para cargar memorias con paginación
+ * 
+ * @example
+ * ```tsx
+ * const { 
+ *   loadMemories, 
+ *   loadMemoriesPage, 
+ *   loadMoreMemories, 
+ *   resetPagination, 
+ *   refreshMemories 
+ * } = useMemoryPagination();
+ * 
+ * // Cargar primera página
+ * await loadMemories();
+ * 
+ * // Cargar más memorias (scroll infinito)
+ * await loadMoreMemories();
+ * ```
+ */
+export const useMemoryPagination = () => {
+  const { updateGlobalState, globalState } = useMemoryState();
+  const encryptionHook = useEncryption();
+  const { decryptMemory } = encryptionHook;
+  const isEncryptionEnabled = encryptionHook.state.masterKey !== null;
+  const { user } = useAuth();
+
+
+  /**
+   * Carga las memorias desde el servidor o localStorage
+   * Función principal para la carga inicial
+   */
+  const loadMemories = useCallback(async () => {
+    if (globalState.initInProgress) {
+      console.log('[useMemoryPagination] Carga ya en progreso, saltando...');
+      return;
+    }
+
+    console.log('[useMemoryPagination] Iniciando carga global de memorias');
+    updateGlobalState({ loading: true, error: null, initInProgress: true });
+    
+    try {
+      const result = await loadMemoriesAPI(MEMORIES_PER_PAGE, 0);
+      
+      if (Array.isArray(result)) {
+        console.log('[useMemoryPagination] Memorias cargadas desde Electron:', result.length);
+        
+        // Obtener el total de memorias
+        const totalMemories = await getTotalMemoriesCount() || result.length;
+        
+        const firstPageMemories: Memory[] = await Promise.all(
+          result.map(async (memoryData): Promise<Memory> => {
+            const memory: Memory = convertMemoryDataToMemory(memoryData);
+            
+            // TODO: Implementar descifrado cuando sea necesario
+            // Por ahora retornamos la memoria tal como está
+            return memory;
+          })
+        );
+        
+        console.log('[useMemoryPagination] Primera página cargada:', firstPageMemories.length);
+        loggingService.info('Memorias cargadas exitosamente', 'useMemoryPagination', {
+          count: firstPageMemories.length,
+          totalMemories,
+          hasMore: totalMemories > MEMORIES_PER_PAGE
+        });
+        
+        const hasMore = totalMemories > MEMORIES_PER_PAGE;
+        
+        updateGlobalState({ 
+          allMemories: firstPageMemories,
+          memories: firstPageMemories,
+          totalMemories,
+          currentPage: 1,
+          hasMore,
+          loading: false, 
+          initialized: true,
+          initInProgress: false 
+        });
+      } else {
+        // Fallback web
+        const webMemories = localStorage.getItem('web_memories');
+        let parsedMemories = webMemories ? JSON.parse(webMemories) : [];
+        
+        // Si no hay memorias, usar memorias de ejemplo para testing
+        if (parsedMemories.length === 0) {
+          parsedMemories = getAllMockMemories();
+          console.log('[useMemoryPagination] Usando memorias de ejemplo para testing:', parsedMemories.length);
+        } else {
+          console.log('[useMemoryPagination] Memorias web cargadas:', parsedMemories.length);
+        }
+        
+        const firstPageMemories: Memory[] = parsedMemories.slice(0, MEMORIES_PER_PAGE);
+        const hasMore = parsedMemories.length > MEMORIES_PER_PAGE;
+        
+        updateGlobalState({ 
+          allMemories: firstPageMemories,
+          memories: firstPageMemories,
+          totalMemories: parsedMemories.length,
+          currentPage: 1,
+          hasMore,
+          loading: false, 
+          initialized: true,
+          initInProgress: false 
+        });
+      }
+    } catch (err) {
+      console.error('[useMemoryPagination] Error cargando memorias:', err);
+      loggingService.error('Error cargando memorias', new Error('Error cargando memorias'), 'useMemoryPagination', {
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      updateGlobalState({ 
+        error: 'Error cargando memorias', 
+        loading: false, 
+        initialized: true,
+        initInProgress: false 
+      });
+      
+      // Fallback web
+      try {
+        const webMemories = localStorage.getItem('web_memories');
+        let parsedMemories = webMemories ? JSON.parse(webMemories) : [];
+        
+        // Si no hay memorias, usar memorias de ejemplo para testing
+        if (parsedMemories.length === 0) {
+          parsedMemories = getAllMockMemories();
+          console.log('[useMemoryPagination] Usando memorias de ejemplo para testing:', parsedMemories.length);
+        }
+        
+        const firstPageMemories: Memory[] = parsedMemories.slice(0, MEMORIES_PER_PAGE);
+        const hasMore = parsedMemories.length > MEMORIES_PER_PAGE;
+        
+        updateGlobalState({ 
+          allMemories: firstPageMemories,
+          memories: firstPageMemories,
+          totalMemories: parsedMemories.length,
+          currentPage: 1,
+          hasMore
+        });
+      } catch (webErr) {
+        console.error('[useMemoryPagination] Error fallback web:', webErr);
+        // Como último recurso, usar memorias de ejemplo
+        const mockData = getAllMockMemories();
+        const firstPageMemories: Memory[] = mockData.slice(0, MEMORIES_PER_PAGE);
+        const hasMore = mockData.length > MEMORIES_PER_PAGE;
+        
+        updateGlobalState({ 
+          allMemories: firstPageMemories,
+          memories: firstPageMemories,
+          totalMemories: mockData.length,
+          currentPage: 1,
+          hasMore: false
+        });
+      }
+    }
+  }, [updateGlobalState, globalState.initInProgress]);
+
+  /**
+   * Carga una página específica de memorias
+   * 
+   * @param {number} page - Número de página a cargar (empezando desde 1)
+   * @param {any} [filters] - Filtros opcionales para aplicar
+   */
+  const loadMemoriesPage = useCallback(async (page: number, filters?: any) => {
+    if (page < 1) return;
+    
+    console.log(`[useMemoryPagination] Cargando página ${page}`);
+    
+    try {
+      updateGlobalState({ loading: true, error: null });
+      
+      const offset = (page - 1) * MEMORIES_PER_PAGE;
+      const limit = page * MEMORIES_PER_PAGE; // Cargar todas las páginas hasta la solicitada
+      
+      const result = await loadMemoriesAPI(limit, 0);
+      
+      if (Array.isArray(result)) {
+        const pageMemories: Memory[] = await Promise.all(
+          result.map(async (memoryData): Promise<Memory> => {
+            const memory: Memory = convertMemoryDataToMemory(memoryData);
+            
+            // TODO: Implementar descifrado cuando sea necesario
+            // Por ahora retornamos la memoria tal como está
+            return memory;
+          })
+        );
+        
+        const hasMore = pageMemories.length < globalState.totalMemories;
+        
+        updateGlobalState({
+          memories: pageMemories,
+          allMemories: pageMemories,
+          currentPage: page,
+          hasMore,
+          loading: false
+        });
+      } else {
+        // Fallback web
+        const webMemories = JSON.parse(localStorage.getItem('web_memories') || '[]');
+        const endIndex = page * MEMORIES_PER_PAGE;
+        const pageMemories = webMemories.slice(0, endIndex);
+        const hasMore = webMemories.length > endIndex;
+        
+        updateGlobalState({
+          memories: pageMemories,
+          allMemories: pageMemories,
+          currentPage: page,
+          hasMore,
+          loading: false
+        });
+      }
+    } catch (err) {
+      console.error('[useMemoryPagination] Error cargando página:', err);
+      });
+    }
+  } catch (err) {
+    console.error('[useMemoryPagination] Error cargando página:', err);
+    updateGlobalState({ 
+      error: 'Error cargando página',
+      loading: false 
+    });
+  }
+}, [updateGlobalState, globalState.memories, globalState.currentPage]);
+
+/**
+ * Carga más memorias para implementar scroll infinito
+ * 
+ * @param {any} [filters] - Filtros opcionales para aplicar
+ */
+const loadMoreMemories = useCallback(async (filters?: any) => {
+  if (globalState.loadingMore || !globalState.hasMore) {
+    console.log('[useMemoryPagination] Ya cargando más o no hay más memorias');
+    return;
+  }
+  
+  console.log('[useMemoryPagination] Cargando más memorias');
+  
+  try {
+    updateGlobalState({ loadingMore: true, error: null });
+  const loadMoreMemories = useCallback(async (filters?: any) => {
+    if (globalState.loadingMore || !globalState.hasMore) {
+      console.log('[useMemoryPagination] Ya cargando más o no hay más memorias');
+      return;
+    }
+    
+    console.log('[useMemoryPagination] Cargando más memorias');
+    
+    try {
+      updateGlobalState({ loadingMore: true, error: null });
+      
+      const nextPage = globalState.currentPage + 1;
+      const offset = (nextPage - 1) * MEMORIES_PER_PAGE;
+      
+      // Cargar la siguiente página desde el servidor
+      const result = await loadMemoriesAPI(MEMORIES_PER_PAGE, offset);
+      
+      if (Array.isArray(result)) {
+        const newPageMemories: Memory[] = await Promise.all(
+          result.map(async (memoryData): Promise<Memory> => {
+            const memory: Memory = convertMemoryDataToMemory(memoryData);
+            
+            // TODO: Implementar descifrado cuando sea necesario
+            // Por ahora retornamos la memoria tal como está
+            return memory;
+          })
+        );
+        
+        // Combinar con las memorias existentes
+        const allCurrentMemories: Memory[] = [...globalState.memories, ...newPageMemories];
+        const hasMore = allCurrentMemories.length < globalState.totalMemories;
+        
+        updateGlobalState({
+          memories: allCurrentMemories,
+          allMemories: allCurrentMemories,
+          currentPage: nextPage,
+          hasMore,
+          loadingMore: false
+        });
+        
+        console.log(`[useMemoryPagination] Página ${nextPage} cargada. Total mostradas: ${allCurrentMemories.length}`);
+      } else {
+        // Fallback web - usar slice de localStorage
+        const webMemories = JSON.parse(localStorage.getItem('web_memories') || '[]');
+        const endIndex = nextPage * MEMORIES_PER_PAGE;
+        const newMemories = webMemories.slice(0, endIndex);
+        const hasMore = webMemories.length > endIndex;
+        
+        updateGlobalState({
+          memories: newMemories,
+          allMemories: newMemories,
+          currentPage: nextPage,
+          hasMore,
+          loadingMore: false
+        });
+      }
+    } catch (err) {
+      console.error('[useMemoryPagination] Error cargando más memorias:', err);
+      updateGlobalState({ 
+        error: 'Error cargando más memorias',
+        loadingMore: false 
+      });
+    }
+  }, [updateGlobalState, isEncryptionEnabled, decryptMemory, globalState.loadingMore, globalState.hasMore, globalState.currentPage, globalState.memories, globalState.totalMemories]);
+
+  /**
+   * Resetea la paginación y recarga las memorias desde la primera página
+   */
+  const resetPagination = useCallback(() => {
+    console.log('[useMemoryPagination] Reseteando paginación');
+    loadMemories();
+  }, [loadMemories]);
+
+  /**
+   * Refresca la lista de memorias recargándolas desde el servidor
+   */
+  const refreshMemories = useCallback(() => {
+    console.log('[useMemoryPagination] Refresh solicitado');
+    loadMemories();
+  }, [loadMemories]);
+
+  // Inicialización global UNA SOLA VEZ
+  useEffect(() => {
+    if (user && !globalState.initialized && !globalState.initInProgress) {
+      updateGlobalState({ initInProgress: true });
+      console.log(`[useMemoryPagination] Iniciando carga global ÚNICA de memorias`);
+      
+      setTimeout(() => {
+        if (!globalState.initialized) {
+          loadMemories();
+        }
+      }, 100);
+    }
+  }, [user, loadMemories, globalState.initialized, globalState.initInProgress, updateGlobalState]);
+
+  return {
+    loadMemories,
+    loadMemoriesPage,
+    loadMoreMemories,
+    resetPagination,
+    refreshMemories,
+    MEMORIES_PER_PAGE
+  };
+};

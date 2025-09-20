@@ -1,0 +1,280 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Variables de tema dinámico */
+    --theme-primary: 245 158 11; /* amber-500 por defecto */
+    --theme-secondary: 254 243 199; /* amber-100 por defecto */
+    --theme-accent: 249 115 22; /* orange-500 por defecto */
+    --theme-background: 255 251 235; /* amber-50 por defecto */
+    --theme-surface: 254 252 232; /* amber-25 por defecto */
+    
+    /* Variables de densidad */
+    --spacing-unit: 1rem; /* 16px por defecto */
+    --component-height: 2.5rem; /* 40px por defecto */
+    --card-padding: 1rem; /* 16px por defecto */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+}
+
+/* Estilos específicos para El Almacén de los Recuerdos */
+@layer components {
+  .warm-gradient {
+    @apply bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100;
+  }
+  
+  .warm-card {
+    @apply bg-white border-amber-200 shadow-sm;
+  }
+  
+  .warm-button {
+    @apply bg-amber-600 hover:bg-amber-700 text-white;
+  }
+  
+  .memory-card {
+    @apply bg-white border border-amber-200 rounded-lg shadow-sm hover:shadow-md transition-shadow;
+  }
+  
+  .emotion-badge {
+    @apply px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .recording-pulse {
+    animation: recording-pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes recording-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-amber-50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-amber-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-amber-400;
+}
+
+/* Utilidades adicionales */
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Estilos de tema dinámico */
+@layer base {
+  /* Tema claro */
+  .light {
+    --background: 255 255 255;
+    --foreground: 15 23 42;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --primary: 59 130 246;
+    --primary-foreground: 255 255 255;
+    --secondary: 243 244 246;
+    --secondary-foreground: 15 23 42;
+    --muted: 248 250 252;
+    --muted-foreground: 100 116 139;
+    --accent: 99 102 241;
+    --accent-foreground: 255 255 255;
+    --border: 226 232 240;
+    --input: 226 232 240;
+  }
+
+  /* Tema oscuro */
+  .dark {
+    --background: 15 23 42;
+    --foreground: 248 250 252;
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
+    --primary: 147 197 253;
+    --primary-foreground: 15 23 42;
+    --secondary: 51 65 85;
+    --secondary-foreground: 248 250 252;
+    --muted: 51 65 85;
+    --muted-foreground: 148 163 184;
+    --accent: 129 140 248;
+    --accent-foreground: 15 23 42;
+    --border: 51 65 85;
+    --input: 51 65 85;
+  }
+
+  /* Tema cálido (por defecto) */
+  .warm {
+    --background: 255 251 235;
+    --foreground: 120 53 15;
+    --card: 255 255 255;
+    --card-foreground: 120 53 15;
+    --primary: 245 158 11;
+    --primary-foreground: 255 255 255;
+    --secondary: 254 243 199;
+    --secondary-foreground: 120 53 15;
+    --muted: 254 252 232;
+    --muted-foreground: 146 64 14;
+    --accent: 249 115 22;
+    --accent-foreground: 255 255 255;
+    --border: 252 211 77;
+    --input: 254 243 199;
+  }
+
+  /* Densidad compacta */
+  .density-compact {
+    --spacing-unit: 0.75rem;
+    --component-height: 2rem;
+    --card-padding: 0.75rem;
+  }
+
+  .density-compact .p-6 {
+    padding: var(--card-padding);
+  }
+
+  .density-compact .space-y-6 > * + * {
+    margin-top: var(--spacing-unit);
+  }
+
+  .density-compact .h-9 {
+    height: var(--component-height);
+  }
+
+  /* Densidad cómoda (por defecto) */
+  .density-comfortable {
+    --spacing-unit: 1rem;
+    --component-height: 2.5rem;
+    --card-padding: 1rem;
+  }
+
+  /* Densidad espaciosa */
+  .density-spacious {
+    --spacing-unit: 1.5rem;
+    --component-height: 3rem;
+    --card-padding: 1.5rem;
+  }
+
+  .density-spacious .p-6 {
+    padding: var(--card-padding);
+  }
+
+  .density-spacious .space-y-6 > * + * {
+    margin-top: var(--spacing-unit);
+  }
+
+  .density-spacious .h-9 {
+    height: var(--component-height);
+  }
+}
+
+/* Transiciones suaves para cambios de tema */
+@layer base {
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+}
+

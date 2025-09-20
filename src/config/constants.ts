@@ -1,0 +1,1 @@
+export const THEMATIC_CATEGORIES = ['todas', 'familia', 'trabajo', 'viajes', 'educación'];

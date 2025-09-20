@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin Conexión - Almacén de Memorias</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .features {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .features h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .features ul {
+            list-style: none;
+        }
+        
+        .features li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4ade80;
+            font-weight: bold;
+        }
+        
+        .retry-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 0.5rem;
+        }
+        
+        .retry-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .online {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .offline {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        @media (max-width: 600px) {
+            .offline-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">
+            📱
+        </div>
+        
+        <h1>Sin Conexión a Internet</h1>
+        
+        <p>
+            No te preocupes, Almacén de Memorias funciona sin conexión. 
+            Puedes seguir usando la aplicación y tus cambios se sincronizarán automáticamente cuando recuperes la conexión.
+        </p>
+        
+        <div class="features">
+            <h3>🚀 Funcionalidades Disponibles Offline:</h3>
+            <ul>
+                <li>Ver todas tus memorias guardadas</li>
+                <li>Crear nuevas memorias</li>
+                <li>Editar memorias existentes</li>
+                <li>Buscar y filtrar contenido</li>
+                <li>Organizar con etiquetas</li>
+                <li>Exportar datos</li>
+            </ul>
+        </div>
+        
+        <div>
+            <button class="retry-button" onclick="checkConnection()">
+                🔄 Verificar Conexión
+            </button>
+            
+            <button class="retry-button" onclick="goHome()">
+                🏠 Ir a la App
+            </button>
+        </div>
+        
+        <div id="status" class="status offline">
+            <strong>Estado:</strong> Sin conexión a internet
+            <br>
+            <span id="queue-info">Operaciones pendientes: <span id="queue-count">0</span></span>
+        </div>
+    </div>
+    
+    <script>
+        // Verificar estado de conexión
+        function updateConnectionStatus() {
+            const status = document.getElementById('status');
+            const isOnline = navigator.onLine;
+            
+            if (isOnline) {
+                status.className = 'status online';
+                status.innerHTML = '<strong>Estado:</strong> ✅ Conectado a internet';
+            } else {
+                status.className = 'status offline';
+                status.innerHTML = `
+                    <strong>Estado:</strong> ❌ Sin conexión a internet<br>
+                    <span id="queue-info">Operaciones pendientes: <span id="queue-count">0</span></span>
+                `;
+            }
+        }
+        
+        // Verificar conexión manualmente
+        function checkConnection() {
+            updateConnectionStatus();
+            
+            if (navigator.onLine) {
+                // Intentar una petición real para verificar conectividad
+                fetch('/', { method: 'HEAD', cache: 'no-cache' })
+                    .then(() => {
+                        alert('✅ Conexión restaurada! Redirigiendo a la aplicación...');
+                        setTimeout(() => goHome(), 1000);
+                    })
+                    .catch(() => {
+                        alert('❌ Sin conexión real a internet. Verifica tu red.');
+                    });
+            } else {
+                alert('❌ Sin conexión a internet. Verifica tu red.');
+            }
+        }
+        
+        // Ir a la aplicación principal
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        // Obtener información de la cola offline
+        function getOfflineQueueInfo() {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                const messageChannel = new MessageChannel();
+                
+                messageChannel.port1.onmessage = (event) => {
+                    const { queueLength } = event.data;
+                    const queueCount = document.getElementById('queue-count');
+                    if (queueCount) {
+                        queueCount.textContent = queueLength || 0;
+                    }
+                };
+                
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'GET_OFFLINE_STATUS' },
+                    [messageChannel.port2]
+                );
+            }
+        }
+        
+        // Event listeners
+        window.addEventListener('online', () => {
+            updateConnectionStatus();
+            setTimeout(() => {
+                alert('✅ Conexión restaurada! Las operaciones pendientes se están sincronizando...');
+                setTimeout(() => goHome(), 2000);
+            }, 1000);
+        });
+        
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Escuchar mensajes del Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                const { type, data } = event.data;
+                
+                if (type === 'OFFLINE_OPERATIONS_SYNCED') {
+                    const queueCount = document.getElementById('queue-count');
+                    if (queueCount) {
+                        queueCount.textContent = data.remaining || 0;
+                    }
+                    
+                    if (data.synced > 0) {
+                        alert(`✅ ${data.synced} operaciones sincronizadas exitosamente!`);
+                    }
+                }
+            });
+        }
+        
+        // Inicializar
+        updateConnectionStatus();
+        getOfflineQueueInfo();
+        
+        // Actualizar info cada 5 segundos
+        setInterval(() => {
+            updateConnectionStatus();
+            getOfflineQueueInfo();
+        }, 5000);
+    </script>
+</body>
+</html>
